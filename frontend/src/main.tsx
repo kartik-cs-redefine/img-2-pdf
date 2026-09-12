@@ -1,5 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { LandingPage } from './pages/LandingPage';
 import './styles/index.css';
 
 const rootElement = document.getElementById('root');
@@ -10,6 +11,6 @@ if (!rootElement) {
 
 createRoot(rootElement).render(
   <StrictMode>
-    {null}
+    <LandingPage />
   </StrictMode>,
 );
