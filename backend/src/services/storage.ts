@@ -52,3 +52,10 @@ export async function createPdfDownloadUrl(path: string, filename: string) {
   if (error || !data) throw error ?? new Error('Could not prepare PDF download.');
   return data.signedUrl;
 }
+
+export async function createPdfPreviewUrl(path: string) {
+  await ensurePrivateBucket();
+  const { data, error } = await storage.storage.from(bucket).createSignedUrl(path, 2 * 60);
+  if (error || !data) throw error ?? new Error('Could not prepare PDF preview.');
+  return data.signedUrl;
+}

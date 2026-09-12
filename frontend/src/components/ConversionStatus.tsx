@@ -1,5 +1,5 @@
 import { motion, useReducedMotion } from 'framer-motion';
-import { CheckCircle2, Download, FileText, ImagePlus, TriangleAlert } from 'lucide-react';
+import { CheckCircle2, Download, Eye, FileText, ImagePlus, TriangleAlert } from 'lucide-react';
 import type { ConversionProgress } from '../services/pdfConversion';
 
 type ConversionStatusProps = {
@@ -9,6 +9,7 @@ type ConversionStatusProps = {
   pdfSize: number | null;
   progress: ConversionProgress | null;
   onDownload: () => void;
+  onPreview: () => void;
   onCreateAnother: () => void;
   onRetry: () => void;
 };
@@ -23,7 +24,7 @@ function progressLabel(progress: ConversionProgress | null) {
   return `Building PDF · ${progress.completed} of ${progress.total}`;
 }
 
-export function ConversionStatus({ error, isConverting, pageCount, pdfSize, progress, onDownload, onCreateAnother, onRetry }: ConversionStatusProps) {
+export function ConversionStatus({ error, isConverting, pageCount, pdfSize, progress, onDownload, onPreview, onCreateAnother, onRetry }: ConversionStatusProps) {
   const reduceMotion = useReducedMotion();
   const percentage = progress ? Math.round((progress.completed / progress.total) * 100) : 0;
 
@@ -36,7 +37,7 @@ export function ConversionStatus({ error, isConverting, pageCount, pdfSize, prog
 
   if (pdfSize !== null) {
     return <motion.div className="conversion-status conversion-status--ready" role="status" initial={reduceMotion ? false : { opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }}>
-      <CheckCircle2 aria-hidden="true" /><div className="conversion-copy"><strong>Your PDF is ready</strong><span>{pageCount} page{pageCount === 1 ? '' : 's'} · {formatFileSize(pdfSize)}</span></div><div className="conversion-buttons"><button type="button" className="button button--primary" onClick={onDownload}><Download size={16} /> Download PDF</button><button type="button" className="button button--secondary" onClick={onCreateAnother}><ImagePlus size={16} /> Create another</button></div>
+      <CheckCircle2 aria-hidden="true" /><div className="conversion-copy"><strong>Your PDF is ready</strong><span>{pageCount} page{pageCount === 1 ? '' : 's'} · {formatFileSize(pdfSize)}</span></div><div className="conversion-buttons"><button type="button" className="button button--secondary" onClick={onPreview}><Eye size={16} /> Preview PDF</button><button type="button" className="button button--primary" onClick={onDownload}><Download size={16} /> Download PDF</button><button type="button" className="button button--secondary" onClick={onCreateAnother}><ImagePlus size={16} /> Create another</button></div>
     </motion.div>;
   }
 

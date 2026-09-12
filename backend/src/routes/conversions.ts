@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { requireAuthentication } from '../middleware/authenticate.js';
 import { HttpError } from '../middleware/error-handler.js';
-import { createPdfDownloadUrl, removePdfs, uploadPdf } from '../services/storage.js';
+import { createPdfDownloadUrl, createPdfPreviewUrl, removePdfs, uploadPdf } from '../services/storage.js';
 import { env } from '../config/env.js';
 
 const MAX_USER_STORAGE_BYTES = 100 * 1024 * 1024;
@@ -154,4 +154,34 @@ conversionsRouter.get('/:id/download', async (request, response, next) => {
     if (!conversion || !conversion.pdfPath) return next(new HttpError(404, 'PDF not found.'));
     return response.json({ downloadUrl: await createPdfDownloadUrl(conversion.pdfPath, sanitizeFilename(conversion.filename)), filename: sanitizeFilename(conversion.filename) });
   } catch { return next(new HttpError(502, 'We could not prepare your PDF download.')); }
+});
+
+conversionsRouter.get('/:id/preview', async (request, response, next) => {
+  const id = z.string().min(1).max(64).safeParse(request.params.id);
+  if (!id.success) return next(new HttpError(404, 'PDF not found.'));
+  try {
+    const conversion = await prisma.conversion.findFirst({ where: { id: id.data, userId: request.auth!.userId }, select: { pdfPath: true } });
+    if (!conversion?.pdfPath) return next(new HttpError(404, 'PDF not found.'));
+    return response.json({ previewUrl: await createPdfPreviewUrl(conversion.pdfPath) });
+  } catch { return next(new HttpError(502, 'We could not prepare your PDF preview.')); }
+});
+
+conversionsRouter.delete('/:id', async (request, response, next) => {
+  const id = z.string().min(1).max(64).safeParse(request.params.id);
+  if (!id.success) return next(new HttpError(404, 'PDF not found.'));
+  const userId = request.auth!.userId;
+  try {
+    const result = await serializeForUser(userId, async () => {
+      const conversion = await prisma.conversion.findFirst({ where: { id: id.data, userId }, select: { id: true, pdfPath: true } });
+      if (!conversion?.pdfPath) throw new HttpError(404, 'PDF not found.');
+      try { await removePdfs([conversion.pdfPath]); }
+      catch (error) {
+        const statusCode = (error as { statusCode?: unknown }).statusCode;
+        if (statusCode !== 404 && statusCode !== '404') throw new HttpError(502, 'We could not delete this PDF. Please try again.');
+      }
+      await prisma.conversion.delete({ where: { id: conversion.id } });
+      return { storage: { usedBytes: await getUsage(userId), limitBytes: MAX_USER_STORAGE_BYTES } };
+    });
+    return response.json(result);
+  } catch (error) { return next(error); }
 });

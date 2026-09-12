@@ -1,7 +1,8 @@
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { LogOut, Menu, X } from 'lucide-react';
+import { LogOut, Menu, Moon, Sun, X } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
+import { useTheme } from '../hooks/useTheme';
 import { Button } from './Button';
 
 type NavbarProps = { onOpenAuth: (mode: 'login' | 'register') => void };
@@ -10,6 +11,7 @@ export function Navbar({ onOpenAuth }: NavbarProps) {
   const [open, setOpen] = useState(false);
   const [logoutError, setLogoutError] = useState<string | null>(null);
   const { status, user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const reduceMotion = useReducedMotion();
   const authTransition = { duration: reduceMotion ? 0.12 : 0.2 };
   const closeMenu = () => setOpen(false);
@@ -37,6 +39,9 @@ export function Navbar({ onOpenAuth }: NavbarProps) {
           </AnimatePresence>
           {logoutError && <span className="nav-auth-error" role="alert">{logoutError}</span>}
         </div>
+        <button className="theme-toggle" type="button" onClick={toggleTheme} aria-pressed={theme === 'dark'} aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'} title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}>
+          {theme === 'light' ? <Moon size={17} aria-hidden="true" /> : <Sun size={17} aria-hidden="true" />}
+        </button>
         <button className="menu-toggle" type="button" onClick={() => setOpen(!open)} aria-label="Toggle menu" aria-expanded={open}>
           {open ? <X size={21} /> : <Menu size={21} />}
         </button>

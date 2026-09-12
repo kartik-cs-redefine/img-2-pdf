@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { AuthProvider } from './context/AuthContext';
 import { LandingPage } from './pages/LandingPage';
 import './styles/index.css';
+import './styles/theme.css';
 
 const rootElement = document.getElementById('root');
 

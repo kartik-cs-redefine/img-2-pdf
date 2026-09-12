@@ -49,4 +49,6 @@ export const conversionsApi = {
     return requestConversions<ConversionListResponse>(`/?${query.toString()}`);
   },
   download(id: string) { return requestConversions<{ downloadUrl: string; filename: string }>(`/${encodeURIComponent(id)}/download`); },
+  previewConversion(id: string) { return requestConversions<{ previewUrl: string }>(`/${encodeURIComponent(id)}/preview`); },
+  deleteConversion(id: string) { return requestConversions<{ storage: StorageUsage }>(`/${encodeURIComponent(id)}`, { method: 'DELETE' }); },
 };
