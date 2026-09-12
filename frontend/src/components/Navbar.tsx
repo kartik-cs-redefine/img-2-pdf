@@ -1,10 +1,23 @@
-import { Menu, X } from 'lucide-react';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { LogOut, Menu, X } from 'lucide-react';
 import { useState } from 'react';
+import { useAuth } from '../hooks/useAuth';
 import { Button } from './Button';
 
-export function Navbar() {
+type NavbarProps = { onOpenAuth: (mode: 'login' | 'register') => void };
+
+export function Navbar({ onOpenAuth }: NavbarProps) {
   const [open, setOpen] = useState(false);
+  const [logoutError, setLogoutError] = useState<string | null>(null);
+  const { status, user, logout } = useAuth();
+  const reduceMotion = useReducedMotion();
+  const authTransition = { duration: reduceMotion ? 0.12 : 0.2 };
   const closeMenu = () => setOpen(false);
+  const openAuth = (mode: 'login' | 'register') => { setLogoutError(null); closeMenu(); onOpenAuth(mode); };
+  const handleLogout = async () => {
+    setLogoutError(null);
+    try { await logout(); closeMenu(); } catch { setLogoutError('We could not sign you out. Please try again.'); }
+  };
 
   return (
     <header className="site-header">
@@ -16,8 +29,13 @@ export function Navbar() {
         <div className={`nav-links ${open ? 'nav-links--open' : ''}`}>
           <a href="#how-it-works" onClick={closeMenu}>How it works</a>
           <a href="#features" onClick={closeMenu}>Features</a>
-          <a href="#privacy" onClick={closeMenu}>Login</a>
-          <Button href="#converter" variant="primary" onClick={closeMenu}>Start converting</Button>
+          {status === 'authenticated' && <a href="#history" onClick={closeMenu}>History</a>}
+          {status === 'checking' && <span className="nav-auth-loading" aria-live="polite">Checking session…</span>}
+          <AnimatePresence initial={false} mode="wait">
+            {status === 'guest' && <motion.div key="guest" className="nav-auth-state" initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: reduceMotion ? 0 : 5 }} transition={authTransition}><button className="nav-auth-link" type="button" onClick={() => openAuth('login')}>Login</button><Button type="button" variant="primary" onClick={() => openAuth('register')}>Get started</Button></motion.div>}
+            {status === 'authenticated' && user && <motion.div key="authenticated" className="nav-account" initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: reduceMotion ? 0 : 5 }} transition={authTransition}><span title={user.email}>Hi, {user.name.split(' ')[0]}</span><button type="button" data-authenticated-control onClick={handleLogout}><LogOut size={15} /> Logout</button></motion.div>}
+          </AnimatePresence>
+          {logoutError && <span className="nav-auth-error" role="alert">{logoutError}</span>}
         </div>
         <button className="menu-toggle" type="button" onClick={() => setOpen(!open)} aria-label="Toggle menu" aria-expanded={open}>
           {open ? <X size={21} /> : <Menu size={21} />}

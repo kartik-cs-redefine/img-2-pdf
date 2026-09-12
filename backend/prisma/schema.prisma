@@ -7,4 +7,24 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Intentionally no models. Introduce the data model and migrations with approved requirements.
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  conversions  Conversion[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Conversion {
+  id         String   @id @default(cuid())
+  userId     String
+  filename   String
+  imageCount Int
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+}

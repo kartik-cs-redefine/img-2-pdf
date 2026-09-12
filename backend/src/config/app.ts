@@ -6,6 +6,8 @@ import helmet from 'helmet';
 import { corsOrigins, env } from './env.js';
 import { notFoundHandler } from '../middleware/not-found.js';
 import { errorHandler } from '../middleware/error-handler.js';
+import { authRouter } from '../routes/auth.js';
+import { conversionsRouter } from '../routes/conversions.js';
 
 export const createApp = () => {
   const app = express();
@@ -31,6 +33,8 @@ export const createApp = () => {
     standardHeaders: 'draft-8',
     legacyHeaders: false,
   }));
+  app.use('/api/auth', authRouter);
+  app.use('/api/conversions', conversionsRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);
