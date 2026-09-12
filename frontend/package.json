@@ -10,14 +10,19 @@
     "typecheck": "tsc -b --pretty false"
   },
   "dependencies": {
+    "@pdf-lib/standard-fonts": "^1.0.0",
+    "@pdf-lib/upng": "^1.0.1",
     "@react-three/fiber": "^9.1.2",
     "@types/three": "^0.177.0",
     "framer-motion": "^12.23.6",
     "lucide-react": "^0.468.0",
     "motion-dom": "^13.2.0",
+    "pako": "^1.0.11",
+    "pdf-lib": "^1.17.1",
     "react": "19.2.0",
     "react-dom": "19.2.0",
-    "three": "^0.177.0"
+    "three": "^0.177.0",
+    "tslib": "^1.11.1"
   },
   "devDependencies": {
     "@babel/helper-globals": "^7.29.7",
