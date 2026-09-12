@@ -15,6 +15,9 @@ const environmentSchema = z.object({
   COOKIE_SECURE: booleanFromString.default('false'),
   COOKIE_SAME_SITE: z.enum(['lax', 'strict', 'none']).default('lax'),
   COOKIE_DOMAIN: z.string().optional(),
+  SUPABASE_URL: z.string().url(),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
+  SUPABASE_STORAGE_BUCKET: z.string().trim().min(1).default('image-to-pdf'),
 });
 
 const parsedEnvironment = environmentSchema.safeParse(process.env);
@@ -25,6 +28,16 @@ if (!parsedEnvironment.success) {
 
 export const env = parsedEnvironment.data;
 export const corsOrigins = env.CORS_ORIGIN.split(',').map((origin) => origin.trim());
+
+// These booleans make missing Storage configuration immediately visible during
+// local development without ever exposing credential values.
+if (env.NODE_ENV === 'development') {
+  console.info('[storage.config]', {
+    supabaseUrlPresent: Boolean(process.env.SUPABASE_URL),
+    supabaseServiceRoleKeyPresent: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
+    bucket: env.SUPABASE_STORAGE_BUCKET,
+  });
+}
 
 if (env.NODE_ENV === 'production' && !env.COOKIE_SECURE) {
   throw new Error('COOKIE_SECURE must be true in production.');

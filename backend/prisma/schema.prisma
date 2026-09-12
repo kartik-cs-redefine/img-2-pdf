@@ -22,6 +22,8 @@ model Conversion {
   userId     String
   filename   String
   imageCount Int
+  pdfPath    String?
+  pdfSize    Int?
   createdAt  DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

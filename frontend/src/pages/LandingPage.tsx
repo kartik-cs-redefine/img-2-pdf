@@ -93,8 +93,11 @@ export function LandingPage() {
       const result = await convertImagesToPdf([...images], setConversionProgress);
       setPdfResult(result); setStatusMessage(`Your ${result.pageCount}-page PDF is ready to download.`);
       if (authStatus === 'authenticated') {
-        void conversionsApi.create({ filename: pdfFilename(), imageCount: images.length })
-          .then(() => setHistoryRefreshKey((current) => current + 1))
+        void conversionsApi.create({ filename: pdfFilename(), imageCount: images.length, pdf: result.blob })
+          .then((saved) => {
+            setHistoryRefreshKey((current) => current + 1);
+            if (saved.removedOlderPdfs) setHistoryWarning('Older PDFs were removed to make space for this conversion.');
+          })
           .catch(() => setHistoryWarning('Your PDF is ready, but we could not save it to history. You can still download it.'));
       }
     } catch (error) {
