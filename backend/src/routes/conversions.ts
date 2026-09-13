@@ -51,9 +51,10 @@ async function serializeForUser<T>(userId: string, task: () => Promise<T>) {
   const previous = persistenceQueues.get(userId) ?? Promise.resolve();
   let release!: () => void;
   const current = new Promise<void>((resolve) => { release = resolve; });
-  persistenceQueues.set(userId, previous.then(() => current));
+  const queued = previous.then(() => current);
+  persistenceQueues.set(userId, queued);
   await previous;
-  try { return await task(); } finally { release(); if (persistenceQueues.get(userId) === current) persistenceQueues.delete(userId); }
+  try { return await task(); } finally { release(); if (persistenceQueues.get(userId) === queued) persistenceQueues.delete(userId); }
 }
 
 const safeConversionSelect = {
@@ -134,6 +135,16 @@ conversionsRouter.get('/', async (request, response, next) => {
 
   const { cursor, limit } = parsed.data;
   try {
+    // A cursor must belong to this authenticated user. Besides making an
+    // invalid cursor deterministic, this keeps pagination scoped exactly as
+    // the history itself is scoped.
+    if (cursor) {
+      const cursorRecord = await prisma.conversion.findFirst({
+        where: { id: cursor, userId: request.auth!.userId },
+        select: { id: true },
+      });
+      if (!cursorRecord) return next(new HttpError(400, 'Please provide a valid pagination cursor.'));
+    }
     const [conversions, usedBytes] = await Promise.all([
       prisma.conversion.findMany({ where: { userId: request.auth!.userId }, select: safeConversionSelect, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], take: limit + 1, ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}) }),
       getUsage(request.auth!.userId),

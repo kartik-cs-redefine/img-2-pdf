@@ -1,6 +1,6 @@
 import { motion, useReducedMotion } from 'framer-motion';
 import { CalendarClock, Download, Eye, FileText, LoaderCircle, Trash2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { conversionsApi, type ConversionRecord, type StorageUsage } from '../services/conversions';
 import { DeletePdfModal } from './DeletePdfModal';
@@ -11,7 +11,7 @@ const formatDate = (value: string) => new Intl.DateTimeFormat(undefined, { dateS
 const formatMegabytes = (bytes: number) => `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 
 export function ConversionHistory({ refreshKey }: ConversionHistoryProps) {
-  const { status } = useAuth();
+  const { status, user } = useAuth();
   const reduceMotion = useReducedMotion();
   const [records, setRecords] = useState<ConversionRecord[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
@@ -27,21 +27,32 @@ export function ConversionHistory({ refreshKey }: ConversionHistoryProps) {
   const [deleteTarget, setDeleteTarget] = useState<ConversionRecord | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const loadSequence = useRef(0);
 
   const load = async (cursor?: string) => {
+    const sequence = ++loadSequence.current;
     setIsLoading(true); setError(null);
     try {
       const response = await conversionsApi.list(cursor);
+      if (sequence !== loadSequence.current) return;
       setRecords((current) => cursor ? [...current, ...response.conversions] : response.conversions);
       setNextCursor(response.nextCursor); setStorage(response.storage);
-    } catch { setError('We could not load your conversion history. Please try again.'); }
-    finally { setIsLoading(false); }
+    } catch {
+      if (sequence === loadSequence.current) setError('We could not load your conversion history. Please try again.');
+    } finally {
+      if (sequence === loadSequence.current) setIsLoading(false);
+    }
   };
 
   useEffect(() => {
-    if (status !== 'authenticated') { setRecords([]); setNextCursor(null); setStorage(null); setError(null); setDownloadError(null); return; }
+    if (status !== 'authenticated') {
+      loadSequence.current += 1;
+      setRecords([]); setNextCursor(null); setStorage(null); setError(null); setDownloadError(null);
+      return;
+    }
     void load();
-  }, [refreshKey, status]);
+    return () => { loadSequence.current += 1; };
+  }, [refreshKey, status, user?.id]);
 
   const download = async (record: ConversionRecord) => {
     if (!record.pdfAvailable || downloadingIds.includes(record.id)) return;
