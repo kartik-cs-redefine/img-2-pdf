@@ -107,7 +107,12 @@ export function LandingPage() {
             setHistoryRefreshKey((current) => current + 1);
             if (saved.removedOlderPdfs) setHistoryWarning('Older PDFs were removed to make space for this conversion.');
           })
-          .catch(() => setHistoryWarning('Your PDF is ready, but we could not save it to history. You can still download it.'));
+          .catch((error) => {
+            const message = error instanceof Error && error.message
+              ? ` ${error.message}`
+              : ' Please try again later.';
+            setHistoryWarning(`Your PDF is ready, but it could not be saved to History.${message} You can still download it.`);
+          });
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'We could not create your PDF. Please try again.';

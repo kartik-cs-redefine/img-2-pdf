@@ -29,6 +29,19 @@ function logConversion(event: string, details: Record<string, unknown>) {
   if (env.NODE_ENV === 'development') console.info(`[conversion.persistence] ${event}`, details);
 }
 
+function logConversionFailure(event: string, error: unknown) {
+  const details = errorDetails(error);
+  // Production logs need enough context to diagnose storage/database issues,
+  // but never include request credentials or configuration values.
+  console.error(`[conversion.persistence] ${event}`, {
+    errorName: details.name,
+    errorCode: details.code,
+    errorMessage: details.message.slice(0, 500),
+    causeName: details.causeName,
+    causeCode: details.causeCode,
+  });
+}
+
 function errorDetails(error: unknown) {
   if (error instanceof Error) {
     const withDetails = error as Error & { code?: unknown; cause?: unknown };
@@ -108,7 +121,7 @@ conversionsRouter.post('/', raw({ type: 'application/pdf', limit: MAX_USER_STORA
         await uploadPdf(pdfPath, request.body);
         logConversion('storage.upload.result', { userId, success: true });
       } catch (error) {
-        logConversion('storage.upload.result', { userId, success: false, ...errorDetails(error) });
+        logConversionFailure('storage.upload.failed', error);
         throw new HttpError(502, 'PDF created successfully, but it could not be saved to History.');
       }
       try {
@@ -117,14 +130,14 @@ conversionsRouter.post('/', raw({ type: 'application/pdf', limit: MAX_USER_STORA
         logConversion('prisma.create.result', { userId, conversionId: conversion.id, success: true });
         return { conversion: toHistoryRecord(conversion), storage: { usedBytes: usage + pdfSize, limitBytes: MAX_USER_STORAGE_BYTES }, removedOlderPdfs };
       } catch (error) {
-        logConversion('prisma.create.result', { userId, success: false, ...errorDetails(error) });
+        logConversionFailure('database.create.failed', error);
         try { await removePdfs([pdfPath]); } catch { /* Do not expose storage internals. */ }
         throw error;
       }
     });
     return response.status(201).json(result);
   } catch (error) {
-    logConversion('request.failed', { userId, ...errorDetails(error) });
+    logConversionFailure('request.failed', error);
     return next(error);
   }
 });
