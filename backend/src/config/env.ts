@@ -6,7 +6,8 @@ const booleanFromString = z.enum(['true', 'false']).transform((value) => value =
 const environmentSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().min(1).max(65535).default(4000),
-  CORS_ORIGIN: z.string().min(1).default('http://localhost:5173'),
+  CORS_ORIGIN: z.string().min(1).default('http://localhost:5173,https://pictapdf.vercel.app'),
+  CORS_ORIGINS: z.string().optional(),
   DATABASE_URL: z.string().url(),
   JWT_SECRET: z.string().min(32),
   JWT_EXPIRES_IN: z.string().default('7d'),
@@ -27,7 +28,11 @@ if (!parsedEnvironment.success) {
 }
 
 export const env = parsedEnvironment.data;
-export const corsOrigins = env.CORS_ORIGIN.split(',').map((origin) => origin.trim());
+const rawOrigins = env.CORS_ORIGINS || env.CORS_ORIGIN;
+export const corsOrigins = rawOrigins
+  .split(',')
+  .map((origin) => origin.trim().replace(/\/$/, ''))
+  .filter(Boolean);
 
 // These booleans make missing Storage configuration immediately visible during
 // local development without ever exposing credential values.
