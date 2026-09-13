@@ -41,9 +41,5 @@
     "typescript": "~5.8.3",
     "vite": "^6.3.5",
     "yallist": "^3.0.2"
-  },
-  "optionalDependencies": {
-    "lightningcss-linux-x64-gnu": "1.32.0",
-    "@rollup/rollup-linux-x64-gnu": "4.63.2"
   }
 }
